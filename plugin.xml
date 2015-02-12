@@ -51,6 +51,5 @@
       <source-file src="src/android/nl/xservices/plugins/Calendar.java" target-dir="src/nl/xservices/plugins" />
       <source-file src="src/android/nl/xservices/plugins/accessor/AbstractCalendarAccessor.java" target-dir="src/nl/xservices/plugins/accessor" />
       <source-file src="src/android/nl/xservices/plugins/accessor/CalendarProviderAccessor.java" target-dir="src/nl/xservices/plugins/accessor" />
-      <source-file src="src/android/nl/xservices/plugins/accessor/LegacyCalendarAccessor.java" target-dir="src/nl/xservices/plugins/accessor" />
    </platform>
 </plugin>
