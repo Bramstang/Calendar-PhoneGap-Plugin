@@ -2,12 +2,15 @@ package nl.xservices.plugins;
 
 import android.app.Activity;
 import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.os.Build;
+import android.provider.CalendarContract;
+import android.provider.CalendarContract.Events;
 import android.util.Log;
 import nl.xservices.plugins.accessor.AbstractCalendarAccessor;
 import nl.xservices.plugins.accessor.CalendarProviderAccessor;
-import nl.xservices.plugins.accessor.LegacyCalendarAccessor;
 import android.database.Cursor;
 import android.net.Uri;
 
@@ -18,262 +21,455 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
 public class Calendar extends CordovaPlugin {
-  public static final String ACTION_CREATE_EVENT_WITH_OPTIONS = "createEventWithOptions";
-  public static final String ACTION_CREATE_EVENT_INTERACTIVELY = "createEventInteractively";
-  public static final String ACTION_DELETE_EVENT = "deleteEvent";
-  public static final String ACTION_FIND_EVENT = "findEvent";
-  public static final String ACTION_LIST_EVENTS_IN_RANGE = "listEventsInRange";
-  public static final String ACTION_LIST_CALENDARS = "listCalendars";
-  public static final String ACTION_CREATE_CALENDAR = "createCalendar";
 
-  public static final Integer RESULT_CODE_CREATE = 0;
+	public static final String ACTION_LIST_CALENDARS = "listCalendars";
+	public static final String ACTION_GET_CALENDAR_WITH_ID = "getCalendarWithId";
+	public static final String ACTION_SAVE_CALENDAR = "saveCalendar";
+	public static final String ACTION_DELETE_CALENDAR_WITH_ID = "deleteCalendarWithId";
+	public static final String ACTION_LIST_EVENTS = "listEvents";
+	public static final String ACTION_GET_EVENT_WITH_ID = "getEventWithId";
+	public static final String ACTION_SAVE_EVENT = "saveEvent";
+	public static final String ACTION_DELETE_EVENT_WITH_ID = "deleteEventWithId";
+	public static final String ACTION_FIND_MATCHING_EVENTS = "findMatchingEvents";
+	public static final String ACTION_DELETE_MATCHING_EVENTS = "deleteMatchingEvents";
 
-  private CallbackContext callback;
+	public static final String ACTION_SET_EVENT_STORE_CHANGED_CALLBACK = "setEventStoreChangedCallback";
 
-  private static final String LOG_TAG = AbstractCalendarAccessor.LOG_TAG;
+	public static final Integer RESULT_CODE_CREATE = 0;
+	private AbstractCalendarAccessor calendarAccessor;
+	// private static CallbackContext callback;
+	private CallbackContext callback;
+	private static final String LOG_TAG = AbstractCalendarAccessor.LOG_TAG;
 
-  @Override
-  public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-    callback = callbackContext;
-    // TODO this plugin may work fine on 3.0 devices, but have not tested it yet, so to be sure:
-    final boolean hasLimitedSupport = Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH;
-    if (ACTION_CREATE_EVENT_WITH_OPTIONS.equals(action)) {
-      if (hasLimitedSupport) {
-        // TODO investigate this option some day: http://stackoverflow.com/questions/3721963/how-to-add-calendar-events-in-android
-        return createEventInteractively(args);
-      } else {
-        return createEvent(args);
-      }
-    } else if (ACTION_CREATE_EVENT_INTERACTIVELY.equals(action)) {
-      return createEventInteractively(args);
-    } else if (ACTION_LIST_EVENTS_IN_RANGE.equals(action)) {
-      return listEventsInRange(args);
-    } else if (!hasLimitedSupport && ACTION_FIND_EVENT.equals(action)) {
-      return findEvents(args);
-    } else if (!hasLimitedSupport && ACTION_DELETE_EVENT.equals(action)) {
-      return deleteEvent(args);
-    } else if (ACTION_LIST_CALENDARS.equals(action)) {
-      return listCalendars();
-//    } else if (!hasLimitedSupport && ACTION_CREATE_CALENDAR.equals(action)) {
-//      return createCalendar(args);
-    }
-    return false;
-  }
+	@Override
+	public boolean execute(final String action, final JSONArray args, final CallbackContext callbackContext)
+			throws JSONException {
 
-  private boolean listCalendars() throws JSONException {
-    final JSONArray jsonObject = getCalendarAccessor().getActiveCalendars();
-    PluginResult res = new PluginResult(PluginResult.Status.OK, jsonObject);
-    callback.sendPluginResult(res);
-    return true;
-  }
+		callback = callbackContext;
 
-  // note: not quite ready for primetime yet
-  private boolean createCalendar(JSONArray args) {
-    if (args.length() == 0) {
-      System.err.println("Exception: No Arguments passed");
-    } else {
-      try {
-        JSONObject jsonFilter = args.getJSONObject(0);
-        final String calendarName = jsonFilter.getString("calendarName");
+		// if we need support for older android later
+		final boolean hasLimitedSupport = Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH;
 
-        getCalendarAccessor().createCalendar(calendarName);
+		cordova.getThreadPool().execute(new Runnable() {
+			public void run() {
+				if (ACTION_LIST_CALENDARS.equals(action)) {
+					listCalendars();
+				} else if (ACTION_GET_CALENDAR_WITH_ID.equals(action)) {
+					getCalendarWithId(args);
+				} else if (ACTION_SAVE_CALENDAR.equals(action)) {
+					saveCalendar(args);
+				} else if (ACTION_DELETE_CALENDAR_WITH_ID.equals(action)) {
+					deleteCalendarWithId(args);
+				} else if (ACTION_LIST_EVENTS.equals(action)) {
+					listEvents(args);
+				} else if (ACTION_GET_EVENT_WITH_ID.equals(action)) {
+					getEventWithId(args);
+				} else if (ACTION_SAVE_EVENT.equals(action)) {
+					saveEvent(args);
+				} else if (ACTION_DELETE_EVENT_WITH_ID.equals(action)) {
+					deleteEventWithId(args);
+				} else if (ACTION_FIND_MATCHING_EVENTS.equals(action)) {
+					findMatchingEvents(args);
+				} else if (ACTION_DELETE_MATCHING_EVENTS.equals(action)) {
+					deleteMatchingEvents(args);
+				} else if (ACTION_SET_EVENT_STORE_CHANGED_CALLBACK.equals(action)) {
+					setEventStoreChangedCallback();
+				}
+			}
+		});
 
-        PluginResult res = new PluginResult(PluginResult.Status.OK, "yes");
-        res.setKeepCallback(true);
-        callback.sendPluginResult(res);
-        return true;
-      } catch (JSONException e) {
-        System.err.println("Exception: " + e.getMessage());
-      }
-    }
-    return false;
-  }
+		return stringContainsItemFromList(action, new String[] { ACTION_LIST_CALENDARS, ACTION_GET_CALENDAR_WITH_ID,
+				ACTION_SAVE_CALENDAR, ACTION_DELETE_CALENDAR_WITH_ID, ACTION_LIST_EVENTS, ACTION_GET_EVENT_WITH_ID,
+				ACTION_SAVE_EVENT, ACTION_DELETE_EVENT_WITH_ID, ACTION_FIND_MATCHING_EVENTS,
+				ACTION_DELETE_MATCHING_EVENTS, ACTION_SET_EVENT_STORE_CHANGED_CALLBACK }); // so beautiful
+	}
 
+	// TODO dummy function for now
+	private boolean setEventStoreChangedCallback() {
 
-  private boolean createEventInteractively(JSONArray args) throws JSONException {
-    final JSONObject jsonFilter = args.getJSONObject(0);
+		PluginResult res = new PluginResult(PluginResult.Status.OK, true);
+		res.setKeepCallback(true);
+		callback.sendPluginResult(res);
 
-    final Intent calIntent = new Intent(Intent.ACTION_EDIT)
-        .setType("vnd.android.cursor.item/event")
-        .putExtra("title", jsonFilter.optString("title"))
-        .putExtra("beginTime", jsonFilter.optLong("startTime"))
-        .putExtra("endTime", jsonFilter.optLong("endTime"))
-        .putExtra("hasAlarm", 1)
-        .putExtra("allDay", AbstractCalendarAccessor.isAllDayEvent(new Date(jsonFilter.optLong("startTime")), new Date(jsonFilter.optLong("endTime"))));
-    // TODO can we pass a reminder here?
+		return true;
+	}
 
-    // optional fields
-    if (!jsonFilter.isNull("location")) {
-      calIntent.putExtra("eventLocation", jsonFilter.optString("location"));
-    }
-    if (!jsonFilter.isNull("notes")) {
-      calIntent.putExtra("description", jsonFilter.optString("notes"));
-    }
+	private boolean listCalendars() {
+		JSONArray jsonObject;
+		try {
+			jsonObject = getCalendarAccessor().getActiveCalendars();
+			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonObject);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
 
-    this.cordova.startActivityForResult(this, calIntent, RESULT_CODE_CREATE);
-    return true;
-  }
+		} catch (JSONException e) {
 
-  private AbstractCalendarAccessor calendarAccessor;
+			e.printStackTrace();
+		}
 
-  private AbstractCalendarAccessor getCalendarAccessor() {
-    if (this.calendarAccessor == null) {
-      // Note: currently LegacyCalendarAccessor is never used, see the TODO at the top of this class
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-        Log.d(LOG_TAG, "Initializing calendar plugin");
-        this.calendarAccessor = new CalendarProviderAccessor(this.cordova);
-      } else {
-        Log.d(LOG_TAG, "Initializing legacy calendar plugin");
-        this.calendarAccessor = new LegacyCalendarAccessor(this.cordova);
-      }
-    }
-    return this.calendarAccessor;
-  }
+		return true;
+	}
 
-  private boolean deleteEvent(JSONArray args) {
-    if (args.length() == 0) {
-      System.err.println("Exception: No Arguments passed");
-    } else {
-      try {
-        JSONObject jsonFilter = args.getJSONObject(0);
-        boolean deleteResult = getCalendarAccessor().deleteEvent(
-            null,
-            jsonFilter.optLong("startTime"),
-            jsonFilter.optLong("endTime"),
-            jsonFilter.optString("title"),
-            jsonFilter.optString("location"));
-        PluginResult res = new PluginResult(PluginResult.Status.OK, deleteResult);
-        res.setKeepCallback(true);
-        callback.sendPluginResult(res);
-        return true;
-      } catch (JSONException e) {
-        System.err.println("Exception: " + e.getMessage());
-      }
-    }
-    return false;
-  }
+	private boolean getCalendarWithId(JSONArray args) {
+		JSONArray jsonObject;
+		try {
+			jsonObject = getCalendarAccessor().getCalendarWithId(args.get(0).toString());
+			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonObject);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
+			return true;
+		} catch (JSONException e) {
 
-  private boolean findEvents(JSONArray args) {
-    if (args.length() == 0) {
-      System.err.println("Exception: No Arguments passed");
-    }
-    try {
-      JSONObject jsonFilter = args.getJSONObject(0);
-      JSONArray jsonEvents = getCalendarAccessor().findEvents(
-          jsonFilter.isNull("title") ? null : jsonFilter.optString("title"),
-          jsonFilter.isNull("location") ? null : jsonFilter.optString("location"),
-          jsonFilter.optLong("startTime"),
-          jsonFilter.optLong("endTime"));
+			e.printStackTrace();
 
-      PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
-      res.setKeepCallback(true);
-      callback.sendPluginResult(res);
-      return true;
+		}
+		return false;
+	}
 
-    } catch (JSONException e) {
-      System.err.println("Exception: " + e.getMessage());
-    }
-    return false;
-  }
+	private boolean saveCalendar(JSONArray args) {
+		if (args.length() == 0) {
+			System.err.println("Exception: No Arguments passed");
+		} else {
+			try {
+				JSONObject jsonFilter = args.getJSONObject(0);
+				final String calendarName = jsonFilter.getString("calendarName");
 
-  private boolean createEvent(JSONArray args) {
-    try {
-      final JSONObject argObject = args.getJSONObject(0);
-      final JSONObject argOptionsObject = argObject.getJSONObject("options");
+				getCalendarAccessor().createCalendar(calendarName);
 
-      boolean status = getCalendarAccessor().createEvent(
-          null,
-          argObject.getString("title"),
-          argObject.getLong("startTime"),
-          argObject.getLong("endTime"),
-          argObject.isNull("notes") ? null : argObject.getString("notes"),
-          argObject.isNull("location") ? null : argObject.getString("location"),
-          argOptionsObject.isNull("firstReminderMinutes") ? null : argOptionsObject.getLong("firstReminderMinutes"),
-          argOptionsObject.isNull("secondReminderMinutes") ? null : argOptionsObject.getLong("secondReminderMinutes"),
-          argOptionsObject.isNull("recurrence") ? null : argOptionsObject.getString("recurrence"),
-          argOptionsObject.isNull("recurrenceEndTime") ? null : argOptionsObject.getLong("recurrenceEndTime")
-      );
+				PluginResult res = new PluginResult(PluginResult.Status.OK, true);
+				res.setKeepCallback(true);
+				callback.sendPluginResult(res);
+				return true;
+			} catch (JSONException e) {
+				System.err.println("Exception: " + e.getMessage());
+			}
+		}
+		return false;
+	}
 
-      callback.success("" + status);
-      return true;
-    } catch (Exception e) {
-      System.err.println("Exception: " + e.getMessage());
-    }
-    return false;
-  }
+	private boolean deleteCalendarWithId(JSONArray args) {
+		if (args.length() == 0) {
+			System.err.println("Exception: No Arguments passed");
+		} else {
+			try {
 
-  private boolean listEventsInRange(JSONArray args) {
-    try {
-      Uri l_eventUri;
-      if (Build.VERSION.SDK_INT >= 8) {
-        l_eventUri = Uri.parse("content://com.android.calendar/events");
-      } else {
-        l_eventUri = Uri.parse("content://calendar/events");
-      }
-      ContentResolver contentResolver = this.cordova.getActivity().getContentResolver();
-      JSONObject jsonFilter = args.getJSONObject(0);
-      JSONArray result = new JSONArray();
-      long input_start_date = jsonFilter.optLong("startTime");
-      long input_end_date = jsonFilter.optLong("endTime");
+				ContentResolver resolver = this.cordova.getActivity().getApplicationContext().getContentResolver();
+				Uri deleteUri = null;
+				deleteUri = ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI,
+						Long.valueOf(args.get(0).toString()).longValue());
+				int nrDeletedRecords = resolver.delete(deleteUri, null, null);
 
-      //prepare start date
-      java.util.Calendar calendar_start = java.util.Calendar.getInstance();
-      Date date_start = new Date(input_start_date);
-      calendar_start.setTime(date_start);
+				boolean deleteResult = nrDeletedRecords > 0;
+				PluginResult res = new PluginResult(PluginResult.Status.OK, deleteResult);
+				res.setKeepCallback(true);
+				callback.sendPluginResult(res);
+				return true;
+			} catch (JSONException e) {
+				System.err.println("Exception: " + e.getMessage());
+			}
+		}
+		return false;
+	}
 
-      //prepare end date
-      java.util.Calendar calendar_end = java.util.Calendar.getInstance();
-      Date date_end = new Date(input_end_date);
-      calendar_end.setTime(date_end);
+	private boolean listEvents(JSONArray args) {
+		try {
+			Uri l_eventUri;
+			if (Build.VERSION.SDK_INT >= 8) {
+				l_eventUri = Uri.parse("content://com.android.calendar/events");
+			} else {
+				l_eventUri = Uri.parse("content://calendar/events");
+			}
+			ContentResolver contentResolver = this.cordova.getActivity().getContentResolver();
+			JSONObject jsonFilter = args.getJSONObject(0);
+			JSONArray result = new JSONArray();
+			long input_start_date = jsonFilter.optLong("startTime");
+			long input_end_date = jsonFilter.optLong("endTime");
 
-      //projection of DB columns
-      String[] l_projection = new String[]{"calendar_id", "eventColor", "title", "description", "dtstart", "dtend", "eventLocation", "allDay"};
+			String title = jsonFilter.isNull("title") ? null : jsonFilter.optString("title");
+			String location = jsonFilter.isNull("location") ? null : jsonFilter.optString("location");
+			String notes = jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes");
+			Integer allDay = jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0);
 
-      //actual query
-      Cursor cursor = contentResolver.query(l_eventUri, l_projection, "( dtstart >" + calendar_start.getTimeInMillis() + " AND dtend <" + calendar_end.getTimeInMillis() + " AND deleted = 0)", null, "dtstart ASC");
+			// prepare start date
+			java.util.Calendar calendar_start = java.util.Calendar.getInstance();
+			Date date_start = new Date(input_start_date);
+			calendar_start.setTime(date_start);
 
-      int i = 0;
-      while (cursor.moveToNext()) {
+			// prepare end date
+			java.util.Calendar calendar_end = java.util.Calendar.getInstance();
+			Date date_end = new Date(input_end_date);
+			calendar_end.setTime(date_end);
 
-        Map calendarMap = new HashMap();
-        calendarMap.put("id", cursor.getString(cursor.getColumnIndex("calendar_id")));
-        calendarMap.put("color", cursor.getString(cursor.getColumnIndex("eventColor")));
+			// projection of DB columns
+			String[] l_projection = new String[] { "calendar_id", "eventColor", "title", "description", "dtstart",
+					"dtend", "eventLocation", "allDay", "_id" };
 
-        result.put(
-            i++,
-            new JSONObject()
-                .put("calendar", calendarMap)
-                .put("title", cursor.getString(cursor.getColumnIndex("title")))
-                .put("notes", cursor.getString(cursor.getColumnIndex("description")))
-                .put("startDate", cursor.getLong(cursor.getColumnIndex("dtstart")))
-                .put("endDate", cursor.getLong(cursor.getColumnIndex("dtend")))
-                .put("location", cursor.getString(cursor.getColumnIndex("eventLocation")) != null ? cursor.getString(cursor.getColumnIndex("eventLocation")) : "")
-                .put("allDay", cursor.getInt(cursor.getColumnIndex("allDay")))
-        );
-      }
+			// filter
+			String selection = "( dtstart >=" + calendar_start.getTimeInMillis() + " AND dtend <="
+					+ calendar_end.getTimeInMillis() + " AND deleted = 0";
+			List<String> selectionList = new ArrayList<String>();
+			String[] selectionArgs;
 
-      PluginResult res = new PluginResult(PluginResult.Status.OK, result);
-      callback.sendPluginResult(res);
-      return true;
-    } catch (JSONException e) {
-      System.err.println("Exception: " + e.getMessage());
-    }
-    return false;
-  }
+			if (title != null) {
+				if (!"".equals(selection)) {
+					selection += " AND ";
+				}
+				selection += Events.TITLE + "=?";
+				selectionList.add(title);
+			}
+			if (location != null) {
+				if (!"".equals(selection)) {
+					selection += " AND ";
+				}
+				selection += Events.EVENT_LOCATION + "=?";
+				selectionList.add(location);
+			}
+			if (notes != null) {
+				if (!"".equals(selection)) {
+					selection += " AND ";
+				}
+				selection += Events.DESCRIPTION + "=?";
+				selectionList.add(notes);
+			}
+			if (allDay != null) {
+				if (!"".equals(selection)) {
+					selection += " AND ";
+				}
+				selection += Events.ALL_DAY + "=?";
+				selectionList.add(Integer.toString(allDay));
+			}
+			selection += ")";
 
-  public void onActivityResult(int requestCode, int resultCode, Intent data) {
-    if (requestCode == RESULT_CODE_CREATE) {
-      if (resultCode == Activity.RESULT_OK || resultCode == Activity.RESULT_CANCELED) {
-        // resultCode may be 0 (RESULT_CANCELED) even when it was created, so passing nothing is the clearest option here
-        callback.success();
-      }
-    } else {
-      callback.error("Unable to add event (" + resultCode + ").");
-    }
-  }
+			selectionArgs = new String[selectionList.size()];
+			// actual query
+			Cursor cursor = contentResolver.query(l_eventUri, l_projection, selection,
+					selectionList.toArray(selectionArgs), "dtstart ASC");
+
+			int i = 0;
+			while (cursor.moveToNext()) {
+
+				Map calendarMap = new HashMap();
+				calendarMap.put("id", cursor.getString(cursor.getColumnIndex("calendar_id")));
+				calendarMap.put("color", cursor.getString(cursor.getColumnIndex("eventColor")));
+
+				result.put(
+						i++,
+						new JSONObject()
+								.put("calendar", calendarMap)
+								.put("id", cursor.getString(cursor.getColumnIndex("_id")))
+								.put("title", cursor.getString(cursor.getColumnIndex("title")))
+								.put("notes", cursor.getString(cursor.getColumnIndex("description")))
+								.put("startDate", cursor.getLong(cursor.getColumnIndex("dtstart")))
+								.put("endDate", cursor.getLong(cursor.getColumnIndex("dtend")))
+								.put("location",
+										cursor.getString(cursor.getColumnIndex("eventLocation")) != null ? cursor
+												.getString(cursor.getColumnIndex("eventLocation")) : "")
+								.put("allDay", cursor.getInt(cursor.getColumnIndex("allDay")) == 1 ? true : false));
+			}
+
+			PluginResult res = new PluginResult(PluginResult.Status.OK, result);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
+			return true;
+		} catch (JSONException e) {
+			System.err.println("Exception: " + e.getMessage());
+		}
+		return false;
+	}
+
+	private boolean getEventWithId(JSONArray args) {
+		if (args.length() == 0) {
+			System.err.println("Exception: No Arguments passed");
+		}
+		try {
+			JSONArray jsonEvents = getCalendarAccessor().findEventWithId(args.get(0).toString());
+
+			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
+			return true;
+
+		} catch (JSONException e) {
+			System.err.println("Exception: " + e.getMessage());
+		}
+		return false;
+	}
+
+	private boolean saveEvent(JSONArray args) {
+		try {
+			final JSONObject argObject = args.getJSONObject(0);
+
+			if (!argObject.isNull("id")) { // if it's an already existing event
+
+				String eventId = argObject.getString("id");
+				String newName = argObject.optString("title");
+				String newLocation = argObject.optString("location");
+				String newNotes = argObject.optString("notes");
+				Long newStartTime = argObject.optLong("startTime");
+				Long newEndTime = argObject.optLong("endTime");
+				String newCalendarId = argObject.optString("calendarId");
+
+				ContentResolver contentResolver = this.cordova.getActivity().getContentResolver();
+				ContentValues values = new ContentValues();
+				Uri updateUri = null;
+
+				if (newName != "")
+					values.put(Events.TITLE, newName);
+				if (newLocation != "")
+					values.put(Events.EVENT_LOCATION, newLocation);
+				if (newNotes != "")
+					values.put(Events.DESCRIPTION, newNotes);
+				if (newStartTime != 0)
+					values.put(Events.DTSTART, newStartTime);
+				if (newEndTime != 0)
+					values.put(Events.DTEND, newEndTime);
+				if (newCalendarId != "")
+					values.put(Events.CALENDAR_ID, Long.valueOf(newCalendarId).longValue());
+
+				updateUri = ContentUris.withAppendedId(Events.CONTENT_URI, Long.valueOf(eventId).longValue());
+				int rows = contentResolver.update(updateUri, values, null, null);
+
+				PluginResult res = new PluginResult(PluginResult.Status.OK, rows > 0);
+				res.setKeepCallback(true);
+				callback.sendPluginResult(res);
+				// callback.success("" + (rows > 0));
+				return rows > 0;
+			}
+
+			boolean status = getCalendarAccessor().createEvent(null, argObject.getString("title"),
+					argObject.getLong("startTime"), argObject.getLong("endTime"),
+					argObject.isNull("notes") ? null : argObject.getString("notes"),
+					argObject.isNull("location") ? null : argObject.getString("location"),
+					argObject.isNull("calendarId") ? null : argObject.getString("calendarId"),
+					argObject.isNull("firstReminderMinutes") ? null : argObject.getLong("firstReminderMinutes"),
+					argObject.isNull("secondReminderMinutes") ? null : argObject.getLong("secondReminderMinutes"),
+					argObject.isNull("recurrence") ? null : argObject.getString("recurrence"),
+					argObject.isNull("recurrenceEndTime") ? null : argObject.getLong("recurrenceEndTime"));
+
+			PluginResult res = new PluginResult(PluginResult.Status.OK, status);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
+			// callback.success("" + (rows > 0));
+
+			// callback.success("" + status);
+			return true;
+		} catch (Exception e) {
+			System.err.println("Exception: " + e.getMessage());
+		}
+		return false;
+	}
+
+	private boolean deleteEventWithId(JSONArray args) {
+		if (args.length() == 0) {
+			System.err.println("Exception: No Arguments passed");
+		} else {
+			try {
+				boolean deleteResult = getCalendarAccessor().deleteEventWithId(
+						Long.valueOf(args.get(0).toString()).longValue());
+				PluginResult res = new PluginResult(PluginResult.Status.OK, deleteResult);
+				res.setKeepCallback(true);
+				callback.sendPluginResult(res);
+				return true;
+			} catch (JSONException e) {
+				System.err.println("Exception: " + e.getMessage());
+			}
+		}
+		return false;
+	}
+
+	private boolean findMatchingEvents(JSONArray args) {
+		if (args.length() == 0) {
+			System.err.println("Exception: No Arguments passed");
+		}
+		try {
+			JSONObject jsonFilter = args.getJSONObject(0);
+			JSONArray jsonEvents = getCalendarAccessor().findEvents(null,
+					jsonFilter.isNull("title") ? null : jsonFilter.optString("title"),
+					jsonFilter.isNull("location") ? null : jsonFilter.optString("location"),
+					jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes"),
+					jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0),
+					jsonFilter.optLong("startTime"), jsonFilter.optLong("endTime"));
+
+			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
+			return true;
+
+		} catch (JSONException e) {
+			System.err.println("Exception: " + e.getMessage());
+		}
+		return false;
+	}
+
+	private boolean deleteMatchingEvents(JSONArray args) {
+		if (args.length() == 0) {
+			System.err.println("Exception: No Arguments passed");
+		}
+		try {
+			JSONObject jsonFilter = args.getJSONObject(0);
+			JSONArray jsonEvents = getCalendarAccessor().findEvents(null,
+					jsonFilter.isNull("title") ? null : jsonFilter.optString("title"),
+					jsonFilter.isNull("location") ? null : jsonFilter.optString("location"),
+					jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes"),
+					jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0),
+					jsonFilter.optLong("startTime"), jsonFilter.optLong("endTime"));
+
+			boolean flag = true;
+			for (int i = 0; i < jsonEvents.length(); i++) {
+				String eventId = jsonEvents.getJSONObject(i).getString("id");
+				if (flag)
+					flag = getCalendarAccessor().deleteEventWithId(Long.valueOf(eventId).longValue());
+			}
+
+			PluginResult res = new PluginResult(PluginResult.Status.OK, flag);
+			res.setKeepCallback(true);
+			callback.sendPluginResult(res);
+			return true;
+
+		} catch (JSONException e) {
+			System.err.println("Exception: " + e.getMessage());
+		}
+		return false;
+	}
+
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == RESULT_CODE_CREATE) {
+			if (resultCode == Activity.RESULT_OK || resultCode == Activity.RESULT_CANCELED) {
+				// resultCode may be 0 (RESULT_CANCELED) even when it was
+				// created, so passing nothing is the clearest option here
+				callback.success();
+			}
+		} else {
+			callback.error("Unable to add event (" + resultCode + ").");
+		}
+	}
+
+	// In case we need to re-introduce the LegacyCalendarAccessor
+	private AbstractCalendarAccessor getCalendarAccessor() {
+		if (this.calendarAccessor == null) {
+
+			this.calendarAccessor = new CalendarProviderAccessor(this.cordova);
+
+			if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+				Log.d(LOG_TAG, "Using old unsupported version of Android. Several functions won't work");
+			}
+		}
+		return this.calendarAccessor;
+	}
+
+	public static boolean stringContainsItemFromList(String inputString, String[] items) {
+		for (int i = 0; i < items.length; i++) {
+			if (inputString.contains(items[i])) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
