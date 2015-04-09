@@ -91,7 +91,7 @@ public abstract class AbstractCalendarAccessor {
 			try {
 				// obj.put("id", this.id);
 				obj.put("id", this.eventId);
-				obj.put("calendarId", this.calendarId);
+				obj.put("calendar", this.calendarId);
 				obj.putOpt("notes", this.message);
 				obj.putOpt("location", this.location);
 				obj.putOpt("title", this.title);
@@ -296,8 +296,14 @@ public abstract class AbstractCalendarAccessor {
 		if (cursor.moveToFirst()) {
 			do {
 				JSONObject calendar = new JSONObject();
+				JSONObject color = new JSONObject();
+				color.put("r", 0.07058824);
+				color.put("b", 0.07058824);
+				color.put("g", 0.3529412);
+				color.put("a", 1);
 				calendar.put("id", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_ID))));
 				calendar.put("name", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_NAME))));
+				calendar.put("color", color);
 				calendarsWrapper.put(calendar);
 			} while (cursor.moveToNext());
 		}
@@ -312,8 +318,14 @@ public abstract class AbstractCalendarAccessor {
 		if (cursor.moveToFirst()) {
 			do {
 				JSONObject calendar = new JSONObject();
+				JSONObject color = new JSONObject();
+				color.put("r", 0.07058824);
+				color.put("b", 0.07058824);
+				color.put("g", 0.3529412);
+				color.put("a", 1);
 				calendar.put("id", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_ID))));
 				calendar.put("name", cursor.getString(cursor.getColumnIndex(this.getKey(KeyIndex.CALENDARS_NAME))));
+				calendar.put("color", color);
 				calendarsWrapper.put(calendar);
 			} while (cursor.moveToNext());
 		}

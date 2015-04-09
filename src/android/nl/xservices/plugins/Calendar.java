@@ -189,8 +189,8 @@ public class Calendar extends CordovaPlugin {
 			ContentResolver contentResolver = this.cordova.getActivity().getContentResolver();
 			JSONObject jsonFilter = args.getJSONObject(0);
 			JSONArray result = new JSONArray();
-			long input_start_date = jsonFilter.optLong("startTime");
-			long input_end_date = jsonFilter.optLong("endTime");
+			long input_start_date = jsonFilter.optLong("startDate");
+			long input_end_date = jsonFilter.optLong("endDate");
 
 			String title = jsonFilter.isNull("title") ? null : jsonFilter.optString("title");
 			String location = jsonFilter.isNull("location") ? null : jsonFilter.optString("location");
@@ -255,14 +255,10 @@ public class Calendar extends CordovaPlugin {
 			int i = 0;
 			while (cursor.moveToNext()) {
 
-				Map calendarMap = new HashMap();
-				calendarMap.put("id", cursor.getString(cursor.getColumnIndex("calendar_id")));
-				calendarMap.put("color", cursor.getString(cursor.getColumnIndex("eventColor")));
-
 				result.put(
 						i++,
 						new JSONObject()
-								.put("calendar", calendarMap)
+								.put("calendar", cursor.getString(cursor.getColumnIndex("calendar_id")))
 								.put("id", cursor.getString(cursor.getColumnIndex("_id")))
 								.put("title", cursor.getString(cursor.getColumnIndex("title")))
 								.put("notes", cursor.getString(cursor.getColumnIndex("description")))
