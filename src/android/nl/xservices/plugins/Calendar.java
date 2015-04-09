@@ -192,6 +192,7 @@ public class Calendar extends CordovaPlugin {
 			long input_start_date = jsonFilter.optLong("startDate");
 			long input_end_date = jsonFilter.optLong("endDate");
 
+			String calendarId = jsonFilter.isNull("calendarId") ? null : jsonFilter.optString("calendarId");
 			String title = jsonFilter.isNull("title") ? null : jsonFilter.optString("title");
 			String location = jsonFilter.isNull("location") ? null : jsonFilter.optString("location");
 			String notes = jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes");
@@ -223,6 +224,13 @@ public class Calendar extends CordovaPlugin {
 				}
 				selection += Events.TITLE + "=?";
 				selectionList.add(title);
+			}
+			if (calendarId!= null) {
+				if (!"".equals(selection)) {
+					selection += " AND ";
+				}
+				selection += Events.CALENDAR_ID + "=?";
+				selectionList.add(calendarId);
 			}
 			if (location != null) {
 				if (!"".equals(selection)) {
