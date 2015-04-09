@@ -258,7 +258,7 @@ public class Calendar extends CordovaPlugin {
 				result.put(
 						i++,
 						new JSONObject()
-								.put("calendar", cursor.getString(cursor.getColumnIndex("calendar_id")))
+								.put("calendarId", cursor.getString(cursor.getColumnIndex("calendar_id")))
 								.put("id", cursor.getString(cursor.getColumnIndex("_id")))
 								.put("title", cursor.getString(cursor.getColumnIndex("title")))
 								.put("notes", cursor.getString(cursor.getColumnIndex("description")))

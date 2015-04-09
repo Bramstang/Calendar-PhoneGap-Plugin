@@ -91,7 +91,7 @@ public abstract class AbstractCalendarAccessor {
 			try {
 				// obj.put("id", this.id);
 				obj.put("id", this.eventId);
-				obj.put("calendar", this.calendarId);
+				obj.put("calendarId", this.calendarId);
 				obj.putOpt("notes", this.message);
 				obj.putOpt("location", this.location);
 				obj.putOpt("title", this.title);
