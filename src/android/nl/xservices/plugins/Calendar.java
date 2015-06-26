@@ -194,7 +194,7 @@ public class Calendar extends CordovaPlugin {
 			long input_end_date = jsonFilter.optLong("endDate");
 
 			// String calendarId = jsonFilter.isNull("calendarId") ? null : jsonFilter.optString("calendarId");
-			String calendarId = jsonFilter.isNull("calendars") ? null : jsonFilter.optJSONObject("calendars").optString("id");
+			String calendarId = jsonFilter.isNull("calendars") ? null : jsonFilter.optJSONArray("calendars").optString(0, "id");
 			String title = jsonFilter.isNull("title") ? null : jsonFilter.optString("title");
 			String location = jsonFilter.isNull("location") ? null : jsonFilter.optString("location");
 			String notes = jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes");
