@@ -180,6 +180,7 @@ public class Calendar extends CordovaPlugin {
 
 	private boolean listEvents(JSONArray args) {
 		try {
+			System.out.println(args.toString());
 			Uri l_eventUri;
 			if (Build.VERSION.SDK_INT >= 8) {
 				l_eventUri = Uri.parse("content://com.android.calendar/events");
