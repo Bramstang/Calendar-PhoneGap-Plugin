@@ -279,7 +279,7 @@ public class Calendar extends CordovaPlugin {
 												.getString(cursor.getColumnIndex("eventLocation")) : "")
 								.put("allDay", cursor.getInt(cursor.getColumnIndex("allDay")) == 1 ? true : false));
 			}
-			
+			System.err.println("From ListEvents");
 			System.err.println(result);
 			
 			PluginResult res = new PluginResult(PluginResult.Status.OK, result);
@@ -299,6 +299,7 @@ public class Calendar extends CordovaPlugin {
 		try {
 			JSONArray jsonEvents = getCalendarAccessor().findEventWithId(args.get(0).toString());
 
+			System.err.println("From GetEventWithId");
 			System.err.println(jsonEvents.toString());
 			
 			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
