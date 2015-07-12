@@ -180,7 +180,6 @@ public class Calendar extends CordovaPlugin {
 
 	private boolean listEvents(JSONArray args) {
 		try {
-			System.out.println(args.toString());
 			Uri l_eventUri;
 			if (Build.VERSION.SDK_INT >= 8) {
 				l_eventUri = Uri.parse("content://com.android.calendar/events");
@@ -319,8 +318,8 @@ public class Calendar extends CordovaPlugin {
 				String newName = argObject.optString("title");
 				String newLocation = argObject.optString("location");
 				String newNotes = argObject.optString("notes");
-				Long newStartTime = argObject.optLong("startTime");
-				Long newEndTime = argObject.optLong("endTime");
+				Long newStartDate = argObject.optLong("startDate");
+				Long newEndDate = argObject.optLong("endDate");
 				String newCalendarId = argObject.optString("calendarId");
 
 				ContentResolver contentResolver = this.cordova.getActivity().getContentResolver();
@@ -333,10 +332,10 @@ public class Calendar extends CordovaPlugin {
 					values.put(Events.EVENT_LOCATION, newLocation);
 				if (newNotes != "")
 					values.put(Events.DESCRIPTION, newNotes);
-				if (newStartTime != 0)
-					values.put(Events.DTSTART, newStartTime);
-				if (newEndTime != 0)
-					values.put(Events.DTEND, newEndTime);
+				if (newStartDate != 0)
+					values.put(Events.DTSTART, newStartDate);
+				if (newEndDate != 0)
+					values.put(Events.DTEND, newEndDate);
 				if (newCalendarId != "")
 					values.put(Events.CALENDAR_ID, Long.valueOf(newCalendarId).longValue());
 
@@ -351,7 +350,7 @@ public class Calendar extends CordovaPlugin {
 			}
 
 			boolean status = getCalendarAccessor().createEvent(null, argObject.getString("title"),
-					argObject.getLong("startTime"), argObject.getLong("endTime"),
+					argObject.getLong("startDate"), argObject.getLong("endDate"),
 					argObject.isNull("notes") ? null : argObject.getString("notes"),
 					argObject.isNull("location") ? null : argObject.getString("location"),
 					argObject.isNull("calendarId") ? null : argObject.getString("calendarId"),
@@ -402,7 +401,7 @@ public class Calendar extends CordovaPlugin {
 					jsonFilter.isNull("location") ? null : jsonFilter.optString("location"),
 					jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes"),
 					jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0),
-					jsonFilter.optLong("startTime"), jsonFilter.optLong("endTime"));
+					jsonFilter.optLong("startDate"), jsonFilter.optLong("endDate"));
 
 			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
 			res.setKeepCallback(true);
@@ -426,7 +425,7 @@ public class Calendar extends CordovaPlugin {
 					jsonFilter.isNull("location") ? null : jsonFilter.optString("location"),
 					jsonFilter.isNull("notes") ? null : jsonFilter.optString("notes"),
 					jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0),
-					jsonFilter.optLong("startTime"), jsonFilter.optLong("endTime"));
+					jsonFilter.optLong("startDate"), jsonFilter.optLong("endDate"));
 
 			boolean flag = true;
 			for (int i = 0; i < jsonEvents.length(); i++) {
