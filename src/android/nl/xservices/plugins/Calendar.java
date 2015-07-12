@@ -24,8 +24,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 public class Calendar extends CordovaPlugin {
 
@@ -408,6 +406,7 @@ public class Calendar extends CordovaPlugin {
 					jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0),
 					jsonFilter.optLong("startDate"), jsonFilter.optLong("endDate"));
 
+			System.err.println("From FindMatchingEvents");
 			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
 			res.setKeepCallback(true);
 			callback.sendPluginResult(res);

@@ -69,7 +69,7 @@ public abstract class AbstractCalendarAccessor {
 		String id;
 
 		String eventId; // this is the one we care about
-		String message; // notes
+		String notes; 
 		String calendarId;
 		String location;
 		String title;
@@ -92,7 +92,7 @@ public abstract class AbstractCalendarAccessor {
 				// obj.put("id", this.id);
 				obj.put("id", this.eventId);
 				obj.put("calendarId", this.calendarId);
-				obj.putOpt("notes", this.message);
+				obj.putOpt("notes", this.notes);
 				obj.putOpt("location", this.location);
 				obj.putOpt("title", this.title);
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -374,7 +374,7 @@ public abstract class AbstractCalendarAccessor {
 			do {
 				Event event = new Event();
 				event.id = cursor.getString(cols[0]);
-				event.message = cursor.getString(cols[1]);
+				event.notes = cursor.getString(cols[1]);
 				event.location = cursor.getString(cols[2]);
 				event.title = cursor.getString(cols[3]);
 				event.startDate = cursor.getString(cols[4]);
@@ -452,7 +452,7 @@ public abstract class AbstractCalendarAccessor {
 		for (Event instance : instances) {
 			Event event = eventMap.get(instance.eventId);
 			if (event != null) {
-				instance.message = event.message;
+				instance.notes = event.notes;
 				instance.location = event.location;
 				instance.title = event.title;
 				instance.calendarId = event.calendarId;
