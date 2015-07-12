@@ -57,6 +57,7 @@ public class Calendar extends CordovaPlugin {
 
 		cordova.getThreadPool().execute(new Runnable() {
 			public void run() {
+				System.out.println(action);
 				if (ACTION_LIST_CALENDARS.equals(action)) {
 					listCalendars();
 				} else if (ACTION_GET_CALENDAR_WITH_ID.equals(action)) {
@@ -277,8 +278,8 @@ public class Calendar extends CordovaPlugin {
 												.getString(cursor.getColumnIndex("eventLocation")) : "")
 								.put("allDay", cursor.getInt(cursor.getColumnIndex("allDay")) == 1 ? true : false));
 			}
-			System.err.println("From ListEvents");
-			System.err.println(result);
+//			System.err.println("From ListEvents");
+//			System.err.println(result);
 			
 			PluginResult res = new PluginResult(PluginResult.Status.OK, result);
 			res.setKeepCallback(true);
@@ -297,8 +298,8 @@ public class Calendar extends CordovaPlugin {
 		try {
 			JSONArray jsonEvents = getCalendarAccessor().findEventWithId(args.get(0).toString());
 
-			System.err.println("From GetEventWithId");
-			System.err.println(jsonEvents.toString());
+//			System.err.println("From GetEventWithId");
+//			System.err.println(jsonEvents.toString());
 			
 			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
 			res.setKeepCallback(true);
@@ -406,7 +407,7 @@ public class Calendar extends CordovaPlugin {
 					jsonFilter.isNull("allDay") ? null : (jsonFilter.optBoolean("allDay") == true ? 1 : 0),
 					jsonFilter.optLong("startDate"), jsonFilter.optLong("endDate"));
 
-			System.err.println("From FindMatchingEvents");
+//			System.err.println("From FindMatchingEvents");
 			PluginResult res = new PluginResult(PluginResult.Status.OK, jsonEvents);
 			res.setKeepCallback(true);
 			callback.sendPluginResult(res);
