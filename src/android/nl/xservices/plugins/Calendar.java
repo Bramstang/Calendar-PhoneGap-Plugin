@@ -279,7 +279,7 @@ public class Calendar extends CordovaPlugin {
 								.put("allDay", cursor.getInt(cursor.getColumnIndex("allDay")) == 1 ? true : false));
 			}
 //			System.err.println("From ListEvents");
-//			System.err.println(result);
+			System.err.println(result);
 			
 			PluginResult res = new PluginResult(PluginResult.Status.OK, result);
 			res.setKeepCallback(true);
