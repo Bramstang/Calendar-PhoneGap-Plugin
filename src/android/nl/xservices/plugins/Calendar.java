@@ -55,8 +55,7 @@ public class Calendar extends CordovaPlugin {
 		// if we need support for older android later
 		final boolean hasLimitedSupport = Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH;
 
-		cordova.getThreadPool().execute(new Runnable() {
-			public void run() {
+	
 				System.out.println(action);
 				if (ACTION_LIST_CALENDARS.equals(action)) {
 					listCalendars();
@@ -81,8 +80,7 @@ public class Calendar extends CordovaPlugin {
 				} else if (ACTION_SET_EVENT_STORE_CHANGED_CALLBACK.equals(action)) {
 					setEventStoreChangedCallback();
 				}
-			}
-		});
+	
 
 		return stringContainsItemFromList(action, new String[] { ACTION_LIST_CALENDARS, ACTION_GET_CALENDAR_WITH_ID,
 				ACTION_SAVE_CALENDAR, ACTION_DELETE_CALENDAR_WITH_ID, ACTION_LIST_EVENTS, ACTION_GET_EVENT_WITH_ID,
