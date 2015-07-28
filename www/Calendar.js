@@ -25,7 +25,7 @@ cordova.addConstructor(function installCalendarPlugin() {
         },
 
         listEvents: function(options, successCallback, errorCallback) {
-            cordova.exec(function(events){console.log(JSON.stringify(events));}, errorCallback, 'Calendar', 'listEvents', [options]);
+            cordova.exec(successCallback, errorCallback, 'Calendar', 'listEvents', [options]);
         },
 
         getEventWithId: function(eventId, successCallback, errorCallback) {
