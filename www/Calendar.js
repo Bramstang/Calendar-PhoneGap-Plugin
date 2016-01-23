@@ -15,9 +15,7 @@ cordova.addConstructor(function installCalendarPlugin() {
         },
 
         saveCalendar: function(calendar, successCallback, errorCallback) {
-            cordova.exec(function() {
-
-            }, errorCallback, 'Calendar', 'saveCalendar', [calendar]);
+            cordova.exec(successCallback, errorCallback, 'Calendar', 'saveCalendar', [calendar]);
         },
 
         deleteCalendarWithId: function(calendarId, successCallback, errorCallback) {
@@ -42,10 +40,6 @@ cordova.addConstructor(function installCalendarPlugin() {
 
         findMatchingEvents: function(partialEvent, successCallback, errorCallback) {
             cordova.exec(successCallback, errorCallback, 'Calendar', 'findMatchingEvents', [partialEvent]);
-        },
-
-        deleteMatchingEvents: function(partialEvent, successCallback, errorCallback) {
-            cordova.exec(successCallback, errorCallback, 'Calendar', 'deleteMatchingEvents', [partialEvent]);
         },
 
         refreshEventStore: function(successCallback, errorCallback) {
